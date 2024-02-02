@@ -1,0 +1,147 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String
+  password      String?
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  userRoles     UserRole[]
+  trainingPlans TrainingPlan[]
+  student       Student?
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+model UserRole {
+  id        String   @id @default(cuid())
+  userId    String
+  role      Role
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+enum Gender {
+  M
+  F
+  O
+}
+
+model Student {
+  id               String            @id @default(cuid())
+  userId           String?           @unique
+  name             String
+  email            String            @unique
+  dateOfBirth      DateTime?
+  gender           Gender?
+  heightInMt       Float?
+  weightInKg       Float?
+  isActive         Boolean?          @default(true)
+  createdAt        DateTime          @default(now())
+  studentExercises StudentExercise[]
+  trainingPlans    TrainingPlan[]
+  user             User?             @relation(fields: [userId], references: [id])
+}
+
+model Muscle {
+  id        String     @id @default(cuid())
+  name      String
+  isActive  Boolean?   @default(true)
+  exercises Exercise[]
+  createdAt DateTime   @default(now())
+}
+
+model Exercise {
+  id                      String                    @id @default(cuid())
+  name                    String
+  muscleId                String
+  description             String?                   @db.VarChar(1000)
+  image                   String?
+  isActive                Boolean                   @default(true)
+  createdAt               DateTime                  @default(now())
+  muscle                  Muscle                    @relation(fields: [muscleId], references: [id])
+  studentExercises        StudentExercise[]
+  trainingExerciseHistory TrainingExerciseHistory[]
+  trainingExercises       TrainingExercise[]
+}
+
+model TrainingPlan {
+  id              String     @id @default(cuid())
+  studentId       String
+  name            String
+  isActive        Boolean?   @default(true)
+  objective       String?    @db.VarChar(1000)
+  createdByUserId String
+  createdAt       DateTime   @default(now())
+  createdByUser   User       @relation(fields: [createdByUserId], references: [id])
+  student         Student    @relation(fields: [studentId], references: [id])
+  trainings       Training[]
+}
+
+model Training {
+  id                String             @id @default(cuid())
+  name              String
+  order             Int                @default(0)
+  trainingPlanId    String
+  isActive          Boolean?           @default(true)
+  createdAt         DateTime           @default(now())
+  trainingPlan      TrainingPlan       @relation(fields: [trainingPlanId], references: [id])
+  trainingHistory   TrainingHistory[]
+  trainingExercises TrainingExercise[]
+}
+
+model TrainingExercise {
+  id                      String                    @id @default(cuid())
+  treiningId              String
+  exerciseId              String
+  intervalInSeconds       Int?
+  order                   Int                       @default(0)
+  isActive                Boolean?                  @default(true)
+  createdAt               DateTime                  @default(now())
+  training                Training                  @relation(fields: [treiningId], references: [id])
+  exercise                Exercise                  @relation(fields: [exerciseId], references: [id])
+  trainingExerciseHistory TrainingExerciseHistory[]
+}
+
+model StudentExercise {
+  id         String   @id @default(cuid())
+  studentId  String
+  exerciseId String
+  weightInKg Float
+  createdAt  DateTime @default(now())
+  student    Student  @relation(fields: [studentId], references: [id])
+  exercise   Exercise @relation(fields: [exerciseId], references: [id])
+}
+
+model TrainingHistory {
+  id         String    @id @default(cuid())
+  startDate  DateTime? @default(now())
+  endDate    DateTime?
+  training   Training? @relation(fields: [trainingId], references: [id])
+  trainingId String?
+}
+
+model TrainingExerciseHistory {
+  id                 String           @id @default(cuid())
+  trainingExerciseId String
+  startDate          DateTime?        @default(now())
+  endDate            DateTime?
+  trainingExercise   TrainingExercise @relation(fields: [trainingExerciseId], references: [id])
+  Exercise           Exercise?        @relation(fields: [exerciseId], references: [id])
+  exerciseId         String?
+}
